@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Profile Card</title>
+    <!-- Nhúng Font chữ dễ thương từ Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* */
+        /* === BIẾN MÀU SẮC (CSS Variables) === */
+        :root {
+            --bg-color: #fff0f5; /* LavenderBlush */
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --primary-pink: #ff8da1;
+            --text-dark: #5a3d46;
+            --text-light: #8a6c75;
+            --shadow: 0 15px 35px rgba(255, 141, 161, 0.2);
+        }
+
+        /* === RESET & LAYOUT CƠ BẢN === */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* Ẩn thanh cuộn do canvas */
+        }
+
+        /* */
+        /* === CANVAS BACKGROUND === */
+        #sakura-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none; /* Xuyên thao tác chuột qua canvas */
+        }
+
+        /* === MAIN CARD STYLING === */
+        .profile-card {
+            position: relative;
+            z-index: 1; /* Nằm trên canvas */
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            width: 340px;
+            border-radius: 30px;
+            padding: 40px 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .profile-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* */
+        /* === AVATAR SECTION === */
+        .avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 8px 20px rgba(255, 141, 161, 0.4);
+            transition: transform 0.2s;
+            background: white;
+            padding: 4px;
+        }
+
+        .avatar-container:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .avatar-overlay {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .avatar-container:hover .avatar-overlay {
+            opacity: 1;
+        }
+
+        /* Badges bay quanh avatar */
+        .badge {
+            position: absolute;
+            background: white;
+            color: var(--primary-pink);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            pointer-events: none;
+            border: 1px solid #ffe4e1;
+        }
+        .badge-1 { top: -10px; right: -20px; animation: float 3s ease-in-out infinite; }
+        .badge-2 { bottom: 10px; left: -30px; animation: float 3s ease-in-out infinite reverse; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* */
+        /* === TEXT INPUTS TÙY CHỈNH === */
+        input[type="text"], textarea {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            color: var(--text-dark);
+            outline: none;
+            resize: none;
+            transition: background 0.3s;
+            border-radius: 8px;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            background: rgba(255, 141, 161, 0.05);
+        }
+
+        .user-name {
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .user-role {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary-pink);
+            border: 1px solid var(--primary-pink);
+            padding: 4px 12px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .user-quote {
+            font-family: 'Dancing Script', cursive;
+            font-size: 22px;
+            color: var(--primary-pink);
+            line-height: 1.4;
+            margin-bottom: 20px;
+            height: 70px; /* Chiều cao cố định cho textarea */
+            overflow: hidden; /* Ẩn thanh cuộn nếu bị tràn */
+        }
+
+        .user-desc {
+            font-size: 13px;
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 25px;
+            height: 75px; /* Tăng chiều cao từ 60px lên 75px để vừa nội dung dài */
+            overflow: hidden; /* Ẩn thanh cuộn */
+        }
+
+        /* === BUTTONS === */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            color: #5a3d46;
+            box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 154, 158, 0.6);
+        }
+        
+        .btn-save:active {
+            transform: translateY(0);
+        }
+
+        .btn-portfolio {
+            background: transparent;
+            color: var(--text-dark);
+            border: 2px solid #ffe4e1;
+        }
+
+        .btn-portfolio:hover {
+            background: #ffe4e1;
+        }
+
+        /* Toast thông báo */
+        .toast {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show {
+            bottom: 20px;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- -->
+    <!-- Lớp nền Canvas chứa hiệu ứng hoa rơi -->
+    <canvas id="sakura-canvas"></canvas>
+
+    <!-- Thẻ Profile HTML -->
+    <div class="profile-card">
+        
+        <!-- Khung ảnh đại diện -->
+        <div class="avatar-container" id="avatar-container">
+            <!-- Đã thay bằng một ảnh placeholder dễ thương -->
+            <img id="avatar-img" src="https://api.dicebear.com/9.x/micah/svg?seed=HieuHanh&backgroundColor=ffb7c5" alt="Avatar">
+            <div class="avatar-overlay" id="avatar-overlay">Thay ảnh</div>
+            <input type="file" id="file-upload" accept="image/*" hidden>
+            
+            <!-- Tags lơ lửng -->
+            <div class="badge badge-1">Chuyên nghiệp</div>
+            <div class="badge badge-2">Tận tâm</div>
+        </div>
+
+        <!-- Thông tin có thể chỉnh sửa -->
+        <input type="text" class="user-name" id="input-name" value="HIỂU HẠNH">
+        <div class="user-role">SALES ADMIN</div>
+        
+        <textarea class="user-quote" id="input-quote">"Những gì xinh đẹp thường đúng một mình :>"</textarea>
+        
+        <textarea class="user-desc" id="input-desc">Phía sau đội Sales "chốt đơn như gió" là một Sales Admin âm thầm check lại hợp đồng lần thứ 3 =)))</textarea>
+
+        <!-- Nút tương tác -->
+        <div class="btn-group">
+            <button class="btn btn-save" id="btn-save">Lưu thay đổi</button>
+            <button class="btn btn-portfolio">Xem Portfolio</button>
+        </div>
+
+        <!-- Thông báo lưu thành công -->
+        <div class="toast" id="toast-msg">Đã cập nhật thành công! ✨</div>
+    </div>
+
+    <!-- -->
+    <script type="module">
+        /* =========================================
+           PHẦN 1: TÍCH HỢP FIREBASE CỦA BẠN
+           ========================================= */
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const avatarContainer = document.getElementById('avatar-container');
+        const fileUpload = document.getElementById('file-upload');
+        const avatarImg = document.getElementById('avatar-img');
+        const avatarOverlay = document.getElementById('avatar-overlay');
+        const btnSave = document.getElementById('btn-save');
+        const toastMsg = document.getElementById('toast-msg');
+
+        let db, currentUser;
+        let isReadOnly = false;
+
+        // 1. CẤU HÌNH FIREBASE CỦA BẠN (Giữ nguyên cấu hình của bạn)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1D0XaTN1m8rz1iyKbdzkWQTvdvbDOwCA",
+            authDomain: "project-8798774196934518938.firebaseapp.com",
+            projectId: "project-8798774196934518938",
+            storageBucket: "project-8798774196934518938.firebasestorage.app",
+            messagingSenderId: "163874898866",
+            appId: "1:163874898866:web:f6843ee56eb1606b0e5aab",
+            measurementId: "G-HPF1TR6VTC"
+        };
+
+        // Khởi tạo app và db
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        db = getFirestore(app);
+
+        // Khởi tạo đăng nhập ẩn danh
+        const initAuth = async () => {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Lỗi đăng nhập:", error);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                checkUrlAndLoad(); 
+            }
+        });
+
+        /* */
+        // 2. Kiểm tra URL xem có ID chia sẻ không
+        async function checkUrlAndLoad() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedId = urlParams.get('id');
+
+            if (sharedId) {
+                // Chế độ cho người xem link chia sẻ
+                isReadOnly = true;
+                document.getElementById('input-name').readOnly = true;
+                document.getElementById('input-quote').readOnly = true;
+                document.getElementById('input-desc').readOnly = true;
+                
+                btnSave.style.display = 'none'; 
+                avatarOverlay.style.display = 'none'; 
+                avatarContainer.style.cursor = 'default';
+
+                try {
+                    // Tải data từ Firestore (Tập hợp 'profiles')
+                    const docRef = doc(db, 'profiles', sharedId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.name) document.getElementById('input-name').value = data.name;
+                        if (data.quote) document.getElementById('input-quote').value = data.quote;
+                        if (data.desc) document.getElementById('input-desc').value = data.desc;
+                        if (data.avatar) avatarImg.src = data.avatar;
+                    } else {
+                        showToast("Không tìm thấy hồ sơ này!", "#f44336");
+                    }
+                } catch (e) {
+                    console.error("Lỗi khi tải dữ liệu:", e);
+                }
+            } else {
+                // Nạp dữ liệu offline của mình
+                loadSavedDataLocal();
+            }
+        }
+
+        function loadSavedDataLocal() {
+            if(isReadOnly) return;
+            const savedName = localStorage.getItem('cute_profile_name');
+            const savedQuote = localStorage.getItem('cute_profile_quote');
+            const savedDesc = localStorage.getItem('cute_profile_desc');
+            const savedAvatar = localStorage.getItem('cute_profile_avatar');
+
+            if (savedName) document.getElementById('input-name').value = savedName;
+            if (savedQuote) document.getElementById('input-quote').value = savedQuote;
+            if (savedDesc) document.getElementById('input-desc').value = savedDesc;
+            if (savedAvatar) avatarImg.src = savedAvatar;
+        }
+
+        function showToast(msg, bgColor = "#4caf50") {
+            toastMsg.innerText = msg;
+            toastMsg.style.background = bgColor;
+            toastMsg.classList.add('show');
+            setTimeout(() => toastMsg.classList.remove('show'), 3000);
+        }
+
+        /* */
+        /* =========================================
+           PHẦN 2: LOGIC FORM & XỬ LÝ ẢNH
+           ========================================= */
+
+        avatarContainer.addEventListener('click', () => {
+            if (!isReadOnly) fileUpload.click();
+        });
+
+        // Hàm nén ảnh trước khi tải lên Cloud
+        function resizeImage(file, maxWidth, maxHeight, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let width = img.width; let height = img.height;
+                    if (width > height && width > maxWidth) {
+                        height *= maxWidth / width; width = maxWidth;
+                    } else if (height > maxHeight) {
+                        width *= maxHeight / height; height = maxHeight;
+                    }
+                    const cvs = document.createElement('canvas');
+                    cvs.width = width; cvs.height = height;
+                    const ctxCvs = cvs.getContext('2d');
+                    ctxCvs.drawImage(img, 0, 0, width, height);
+                    callback(cvs.toDataURL('image/jpeg', 0.8)); // Nén JPEG 80%
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        fileUpload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    showToast('Vui lòng chọn một file hình ảnh!', "#f44336");
+                    return;
+                }
+                resizeImage(file, 300, 300, (compressedBase64) => {
+                    avatarImg.src = compressedBase64;
+                });
+            }
+        });
+
+        /* */
+        // Sự kiện Lưu thay đổi (Vào Local và Firebase)
+        btnSave.addEventListener('click', async function() {
+            const name = document.getElementById('input-name').value;
+            const quote = document.getElementById('input-quote').value;
+            const desc = document.getElementById('input-desc').value;
+            const avatarBase64 = avatarImg.src;
+
+            // Lưu nháp dưới máy (Local Storage)
+            localStorage.setItem('cute_profile_name', name);
+            localStorage.setItem('cute_profile_quote', quote);
+            localStorage.setItem('cute_profile_desc', desc);
+            localStorage.setItem('cute_profile_avatar', avatarBase64);
+
+            const originalText = this.innerText;
+            this.innerText = "Đang lưu lên Cloud...";
+            this.style.transform = "scale(0.95)";
+
+            // Đẩy dữ liệu lên Cloud Firestore (Chỉ lưu, KHÔNG hiện link)
+            if (currentUser && db) {
+                try {
+                    // Lưu thẳng vào tập hợp (collection) 'profiles'
+                    const docRef = doc(db, 'profiles', currentUser.uid);
+                    await setDoc(docRef, {
+                        name, quote, desc, avatar: avatarBase64, updatedAt: new Date().toISOString()
+                    });
+
+                    // Báo thành công
+                    showToast("Đã lưu thành công lên Cloud! ✨");
+                } catch (e) {
+                    console.error("Lỗi lưu Cloud:", e);
+                    showToast("Lưu cục bộ. Bị chặn bởi Firebase Rules!", "#ff9800");
+                }
+            } else {
+                 showToast("Đã lưu cục bộ! ✨");
+            }
+
+            this.innerText = originalText;
+            this.style.transform = "scale(1)";
+        });
+
+        /* */
+        /* =========================================
+           PHẦN 3: LOGIC HIỆU ỨNG HOA RƠI (CANVAS)
+           ========================================= */
+
+        const canvas = document.getElementById('sakura-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height; let petals = []; const NUM_PETALS = 35; 
+
+        function resizeCanvas() {
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width; canvas.height = height;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Petal {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * width; this.y = Math.random() * height - height;
+                this.size = Math.random() * 15 + 10; this.speedY = Math.random() * 1.5 + 0.5;
+                this.speedX = Math.random() * 2 - 1; this.angle = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.05;
+            }
+            update() {
+                this.y += this.speedY; this.x += this.speedX + Math.sin(this.y * 0.01) * 0.5; 
+                this.angle += this.spin;
+                if (this.y > height + this.size) { this.reset(); this.y = -this.size; }
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+                ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    ctx.rotate((Math.PI * 2) / 5); ctx.moveTo(0, 0);
+                    ctx.bezierCurveTo(this.size / 2, -this.size / 2, this.size, -this.size / 2, this.size, 0);
+                    ctx.bezierCurveTo(this.size, this.size / 2, this.size / 2, this.size / 2, 0, 0);
+                }
+                ctx.fillStyle = '#ffb7c5'; ctx.fill(); ctx.closePath(); ctx.restore();
+            }
+        }
+
+        for (let i = 0; i < NUM_PETALS; i++) petals.push(new Petal());
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            petals.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+    </script>
+</body>
+</html>
